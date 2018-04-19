@@ -1,16 +1,33 @@
 #include <iostream>
 #include <WS2tcpip.h>
 #include <string>
+#include <chrono>
 
 #pragma comment (lib, "ws2_32.lib")
 
 using namespace std;
+
+#define NUM_PACKAGES 250
+
+string encryptDecrypt (string toEncrypt)
+{
+	char key = 'K'; //Any char will work
+	string output = toEncrypt;
+
+	for (int i = 0; i < toEncrypt.size (); i++)
+		output[i] = toEncrypt[i] ^ key;
+
+	return output;
+}
+
 
 void main(int argc, char* argv[]) {
 
 	//startup winsock
 	WSADATA data;
 	WORD version = MAKEWORD(2, 2);
+	
+
 
 	int wsOk = WSAStartup(version, &data);
 
@@ -30,17 +47,29 @@ void main(int argc, char* argv[]) {
 	SOCKET out = socket(AF_INET, SOCK_DGRAM, 0);
 
 	//write out to the socket
-	string s(argv[1]);
-	int sendOK = sendto(out, s.c_str(), s.size() + 1, 0, (sockaddr*)&server, sizeof(server));
+	// string s(argv[1]);
+	
 
-	if (sendOK == SOCKET_ERROR) {
-		cout << "Houston, we have a problem" << WSAGetLastError() << endl;
+	for (int i = 0; i < NUM_PACKAGES; ++i)
+	{
+		string s ("");
+		s += NUM_PACKAGES + " ";
+		s += i;
+		// s += std::chrono::now()
+		// add above here any more necessary information (like timer)
+
+		int sendOK = sendto (out, s.c_str (), s.size () + 1, 0, (sockaddr*)&server, sizeof (server));
+
+		if (sendOK == SOCKET_ERROR)
+		{
+			cout << "Houston, we have a problem " << WSAGetLastError () << " at package number " << i << endl;
+		}
 	}
-
 	//close the socket
 	closesocket(out);
 
 	//cleanup winsock
 	WSACleanup();
 
+	getchar ();
 }

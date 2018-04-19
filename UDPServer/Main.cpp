@@ -1,9 +1,29 @@
 #include <iostream>
+#include <string>
+#include <map>
 #include <WS2tcpip.h>
 
 #pragma comment (lib, "ws2_32.lib")
 
 using namespace std;
+
+string encryptDecrypt (string toEncrypt)
+{
+	char key = 'K'; //Any char will work
+	string output = toEncrypt;
+
+	for (int i = 0; i < toEncrypt.size (); i++)
+		output[i] = toEncrypt[i] ^ key;
+
+	return output;
+}
+
+struct ClientMessage
+{
+
+};
+
+std::map<int, ClientMessage> clients;
 
 void main() {
 
@@ -37,6 +57,14 @@ void main() {
 
 	char buf[1024];
 
+
+	string encrypted = encryptDecrypt ("this is a test");
+	cout << "Encrypted:" << encrypted << "\n";
+
+	string decrypted = encryptDecrypt (encrypted);
+	cout << "Decrypted:" << decrypted << "\n";
+
+		static int i = 0;
 	//enter a loop
 	while (true) {
 
@@ -54,7 +82,8 @@ void main() {
 		ZeroMemory(clientIP, 256);
 
 		inet_ntop(AF_INET, &client.sin_addr, clientIP, 256);
-		cout << "Message received from: " << clientIP << " " << buf << endl;
+		//sendto (in, "hi", 2, 0, (struct sockadd*)&client, sizeof (client));
+		cout << "Message received from: " << clientIP << " " << buf << " " << ++i << endl;
 	}
 
 	//close socket

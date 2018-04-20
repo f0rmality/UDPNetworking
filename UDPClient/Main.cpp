@@ -14,9 +14,11 @@ SOCKET createUDPSocket (string server, int port);
 void sendMessages (int numberOfMessages, SOCKET toSend);
 void listenToMessages (SOCKET toListen);
 string encryptDecrypt (string toEncrypt);
+void shouldStopListening ();
 
 /** --- GLOBAL VARIABLES */
 //startup winsock
+bool stopListening = false;
 WSADATA g_data;
 WORD g_version = MAKEWORD (2, 2);
 sockaddr_in g_server;
@@ -25,20 +27,21 @@ void main(int argc, char* argv[])
 {
 	SOCKET out = createUDPSocket ("127.0.0.1", 54000);
 
+	std::thread stopListeningThread (shouldStopListening);
 	std::thread listenerThread(std::bind(listenToMessages,out));
-
 	std::thread senderThread (std::bind(sendMessages, NUM_PACKAGES, out));
 
+	stopListeningThread.join ();
 	senderThread.join ();
 	listenerThread.join ();
+
+	std::cout << "threads closed " << std::endl;
 	
 	//close the socket
 	closesocket(out);
 
 	//cleanup winsock
 	WSACleanup();
-
-	getchar ();
 }
 
 SOCKET createUDPSocket (string serverIP, int port)
@@ -72,9 +75,12 @@ void sendMessages (int numberOfMessages, SOCKET toSend)
 	for (int i = 0; i < numberOfMessages; ++i)
 	{
 		string s ("");
-		s += std::to_string(numberOfMessages);
-		s += std::to_string(i);
-		// s += std::chrono::now()
+		s += std::to_string(numberOfMessages) + " ";
+		s += std::to_string(i) + " ";
+
+		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now ();
+		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now ();
+		std::chrono::duration_cast<std::chrono::microseconds>(end - start).count ();
 		// add above here any more necessary information (like timer)
 
 		string encrypted = encryptDecrypt (s);
@@ -95,7 +101,7 @@ void listenToMessages (SOCKET toListen)
 	int serverLength = sizeof (g_server);
 
 	//client needs to listen for messages or will close socket immediately
-	while (true)
+	while (!stopListening)
 	{
 		ZeroMemory (buf, 1024);
 
@@ -109,6 +115,12 @@ void listenToMessages (SOCKET toListen)
 
 		cout << "Message received from server: " << buf << endl;
 	}
+}
+
+void shouldStopListening ()
+{
+	getchar ();
+	stopListening = true;
 }
 
 string encryptDecrypt (string toEncrypt)

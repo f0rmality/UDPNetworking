@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <sstream>
+#include <vector>
 #include <map>
 #include <WS2tcpip.h>
 
@@ -18,12 +20,25 @@ string encryptDecrypt (string toEncrypt)
 	return output;
 }
 
+std::vector<std::string> split (const std::string& s, char delimiter)
+{
+	std::vector<std::string> tokens;
+	std::string token;
+	std::istringstream tokenStream (s);
+	while (std::getline (tokenStream, token, delimiter))
+	{
+		tokens.push_back (token);
+	}
+	return tokens;
+}
+
 struct ClientMessage
 {
-
+	int totalMessages = 0;
+	int messagesReceived = 0;
 };
 
-std::map<int, ClientMessage> clients;
+std::map<char*, ClientMessage> clients;
 
 void main() {
 
@@ -64,10 +79,10 @@ void main() {
 	//string decrypted = encryptDecrypt (encrypted);
 	//cout << "Decrypted:" << decrypted << "\n";
 
-	static int i = 0;
+	bool shouldClose = false;
 	
 	//enter a loop
-	while (true) {
+	while (!shouldClose) {
 
 		ZeroMemory(buf, 1024);
 
@@ -80,13 +95,21 @@ void main() {
 
 		string decryptedMessage = encryptDecrypt (buf);
 
+		std::vector<std::string> messages = split (decryptedMessage, ' ');
+
 		//display message and client info
 		char clientIP[256];
 		ZeroMemory(clientIP, 256);
 
 		inet_ntop(AF_INET, &client.sin_addr, clientIP, 256);
+
+		clients[clientIP].totalMessages = stoi (messages[0]);
+		++clients[clientIP].messagesReceived;
+
 		sendto (in, decryptedMessage.c_str(), 2, 0, (sockaddr*)&client, sizeof (client));
-		cout << "Message received from: " << clientIP << " " << decryptedMessage << " " << ++i << endl;
+		cout << "Message received from: " << clientIP << " " << decryptedMessage << //endl;
+			 " " << (float)clients[clientIP].messagesReceived << 
+			 " " << (float)clients[clientIP].totalMessages << endl;
 	}
 
 	//do we sort the messages by ping afterwards???

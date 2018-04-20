@@ -78,6 +78,8 @@ void main() {
 			continue;
 		}
 
+		string decryptedMessage = encryptDecrypt (buf);
+
 		//display message and client info
 		char clientIP[256];
 		ZeroMemory(clientIP, 256);

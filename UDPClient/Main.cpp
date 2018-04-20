@@ -4,6 +4,8 @@
 #include <thread>
 #include <chrono>
 
+#include <deque>
+
 #pragma comment (lib, "ws2_32.lib")
 
 using namespace std;
@@ -72,6 +74,9 @@ SOCKET createUDPSocket (string serverIP, int port)
 	return out;
 }
 
+
+deque<std::chrono::steady_clock::time_point> starts;
+
 void sendMessages (int numberOfMessages, SOCKET toSend)
 {
 	for (int i = 0; i < numberOfMessages; ++i)
@@ -80,9 +85,21 @@ void sendMessages (int numberOfMessages, SOCKET toSend)
 		s += std::to_string(numberOfMessages) + " ";
 		s += std::to_string(i) + " ";
 
+		time_t rawtime;
+		struct tm timeinfo;
+		char buffer[40];
+
+		/*time (&rawtime);
+		localtime_s (&timeinfo, &rawtime);
+		timeinfo.tm_sec / 1000;
+
+		strftime (buffer, sizeof (buffer), "%I:%M:%S", &timeinfo);
+		std::string str (buffer);
+		s += str;*/
+
 		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now ();
-		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now ();
-		std::chrono::duration_cast<std::chrono::microseconds>(end - start).count ();
+		starts.push_back (start);
+		
 		// add above here any more necessary information (like timer)
 
 		string encrypted = encryptDecrypt (s);
@@ -114,7 +131,13 @@ void listenToMessages (SOCKET toListen)
 			continue;
 		}
 
-		cout << "Message received from server: " << buf << endl;
+		auto start = starts.front ();
+		starts.pop_front ();
+		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now ();
+		//std::chrono::duration_cast<std::chrono::microseconds>(end - start).count ();
+
+		cout << "Message received from server: " << buf << " " << 
+			std::chrono::duration_cast<std::chrono::microseconds>(end - start).count () << "us" << endl;
 	}
 }
 

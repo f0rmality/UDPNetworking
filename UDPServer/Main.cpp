@@ -85,8 +85,8 @@ void main() {
 		ZeroMemory(clientIP, 256);
 
 		inet_ntop(AF_INET, &client.sin_addr, clientIP, 256);
-		sendto (in, buf, 2, 0, (sockaddr*)&client, sizeof (client));
-		cout << "Message received from: " << clientIP << " " << buf << " " << ++i << endl;
+		sendto (in, decryptedMessage.c_str(), 2, 0, (sockaddr*)&client, sizeof (client));
+		cout << "Message received from: " << clientIP << " " << decryptedMessage << " " << ++i << endl;
 	}
 
 	//do we sort the messages by ping afterwards???

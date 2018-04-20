@@ -1,6 +1,7 @@
 #include <iostream>
 #include <WS2tcpip.h>
 #include <string>
+#include <thread>
 #include <chrono>
 
 #pragma comment (lib, "ws2_32.lib")
@@ -24,9 +25,12 @@ void main(int argc, char* argv[])
 {
 	SOCKET out = createUDPSocket ("127.0.0.1", 54000);
 
-	sendMessages (NUM_PACKAGES, out);
+	std::thread listenerThread(std::bind(listenToMessages,out));
 
-	listenToMessages (out);
+	std::thread senderThread (std::bind(sendMessages, NUM_PACKAGES, out));
+
+	senderThread.join ();
+	listenerThread.join ();
 	
 	//close the socket
 	closesocket(out);
@@ -68,12 +72,13 @@ void sendMessages (int numberOfMessages, SOCKET toSend)
 	for (int i = 0; i < numberOfMessages; ++i)
 	{
 		string s ("");
-		s += numberOfMessages + " ";
-		s += i;
+		s += std::to_string(numberOfMessages);
+		s += std::to_string(i);
 		// s += std::chrono::now()
 		// add above here any more necessary information (like timer)
 
 		string encrypted = encryptDecrypt (s);
+		cout << " e " << s << " " << encrypted << endl;
 
 		int sendOK = sendto (toSend, encrypted.c_str (), encrypted.size () + 1, 0, (sockaddr*)&g_server, sizeof (g_server));
 
@@ -102,7 +107,7 @@ void listenToMessages (SOCKET toListen)
 			continue;
 		}
 
-		cout << "Message received from server: " << " " << buf << " " << endl;
+		cout << "Message received from server: " << buf << endl;
 	}
 }
 

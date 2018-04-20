@@ -27,6 +27,8 @@ void main(int argc, char* argv[])
 {
 	SOCKET out = createUDPSocket ("127.0.0.1", 54000);
 
+	using namespace std::chrono;
+
 	std::thread stopListeningThread (shouldStopListening);
 	std::thread listenerThread(std::bind(listenToMessages,out));
 	std::thread senderThread (std::bind(sendMessages, NUM_PACKAGES, out));
@@ -84,7 +86,6 @@ void sendMessages (int numberOfMessages, SOCKET toSend)
 		// add above here any more necessary information (like timer)
 
 		string encrypted = encryptDecrypt (s);
-		cout << " e " << s << " " << encrypted << endl;
 
 		int sendOK = sendto (toSend, encrypted.c_str (), encrypted.size () + 1, 0, (sockaddr*)&g_server, sizeof (g_server));
 

@@ -3,16 +3,15 @@
 #include <sstream>
 #include <vector>
 #include <map>
+#include <thread>
 #include <WS2tcpip.h>
 
 #pragma comment (lib, "ws2_32.lib")
 
-using namespace std;
-
-string encryptDecrypt (string toEncrypt)
+std::string encryptDecrypt (std::string toEncrypt)
 {
 	char key = 'K'; //Any char will work
-	string output = toEncrypt;
+	std::string output = toEncrypt;
 
 	for (int i = 0; i < toEncrypt.size (); i++)
 		output[i] = toEncrypt[i] ^ key;
@@ -40,8 +39,15 @@ struct ClientMessage
 
 std::map<char*, ClientMessage> clients;
 
-void main() {
+static bool close = false;
+void shouldClose ()
+{
+	getchar ();
+	close = true;
+}
 
+void main() {
+	std::thread stopListeningThread (shouldClose);
 	//startup winsock
 	WSADATA data;
 	WORD version = MAKEWORD(2, 2);
@@ -49,7 +55,7 @@ void main() {
 	int wsOk = WSAStartup(version, &data);
 
 	if (wsOk != 0) {
-		cout << "Can't start winsock!" << wsOk;
+		std::cout << "Can't start winsock!" << wsOk;
 		return;
 	}
 
@@ -62,7 +68,7 @@ void main() {
 	serverHint.sin_port = htons(54000); //convert from little to big endian
 
 	if (bind(in, (sockaddr*)&serverHint, sizeof(serverHint)) == SOCKET_ERROR) {
-		cout << "Can't find socket!" << WSAGetLastError() << endl;
+		std::cout << "Can't find socket!" << WSAGetLastError() << std::endl;
 		return;
 	}
 
@@ -78,22 +84,20 @@ void main() {
 
 	//string decrypted = encryptDecrypt (encrypted);
 	//cout << "Decrypted:" << decrypted << "\n";
-
-	bool shouldClose = false;
 	
 	//enter a loop
-	while (!shouldClose) {
+	while (!close) {
 
 		ZeroMemory(buf, 1024);
 
 		//wait for message
 		int bytesIn = recvfrom(in, buf, 1024, 0, (sockaddr*)&client, &clientLength);
 		if (bytesIn == SOCKET_ERROR) {
-			cout << "Error receiving from client" << WSAGetLastError() << endl;
+			std::cout << "Error receiving from client" << WSAGetLastError() << std::endl;
 			continue;
 		}
 
-		string decryptedMessage = encryptDecrypt (buf);
+		std::string decryptedMessage = encryptDecrypt (buf);
 
 		std::vector<std::string> messages = split (decryptedMessage, ' ');
 
@@ -106,13 +110,17 @@ void main() {
 		clients[clientIP].totalMessages = stoi (messages[0]);
 		++clients[clientIP].messagesReceived;
 
-		sendto (in, decryptedMessage.c_str(), 2, 0, (sockaddr*)&client, sizeof (client));
-		cout << "Message received from: " << clientIP << " " << decryptedMessage << //endl;
+		sendto (in, decryptedMessage.c_str(), decryptedMessage.length() + 1, 0, (sockaddr*)&client, sizeof (client));
+		std::cout << "Message received from: " << clientIP << " " << //endl;
 			 " " << (float)clients[clientIP].messagesReceived << 
-			 " " << (float)clients[clientIP].totalMessages << endl;
+			 " " << (float)clients[clientIP].totalMessages << std::endl;
 	}
 
 	//do we sort the messages by ping afterwards???
+
+	std::cout << "out!" << std::endl;
+
+	stopListeningThread.join ();
 
 	//close socket
 	closesocket(in);

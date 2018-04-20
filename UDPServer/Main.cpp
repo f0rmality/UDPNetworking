@@ -58,13 +58,14 @@ void main() {
 	char buf[1024];
 
 
-	string encrypted = encryptDecrypt ("this is a test");
-	cout << "Encrypted:" << encrypted << "\n";
+	//string encrypted = encryptDecrypt ("this is a test");
+	//cout << "Encrypted:" << encrypted << "\n";
 
-	string decrypted = encryptDecrypt (encrypted);
-	cout << "Decrypted:" << decrypted << "\n";
+	//string decrypted = encryptDecrypt (encrypted);
+	//cout << "Decrypted:" << decrypted << "\n";
 
-		static int i = 0;
+	static int i = 0;
+	
 	//enter a loop
 	while (true) {
 
@@ -82,9 +83,11 @@ void main() {
 		ZeroMemory(clientIP, 256);
 
 		inet_ntop(AF_INET, &client.sin_addr, clientIP, 256);
-		//sendto (in, "hi", 2, 0, (struct sockadd*)&client, sizeof (client));
+		sendto (in, buf, 2, 0, (sockaddr*)&client, sizeof (client));
 		cout << "Message received from: " << clientIP << " " << buf << " " << ++i << endl;
 	}
+
+	//do we sort the messages by ping afterwards???
 
 	//close socket
 	closesocket(in);

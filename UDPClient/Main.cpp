@@ -38,6 +38,9 @@ void main(int argc, char* argv[]) {
 
 	//create a hint structure for the server
 	sockaddr_in server;
+	int serverLength = sizeof(server);
+	char buf[1024];
+
 	server.sin_family = AF_INET;
 	server.sin_port = htons(54000);
 
@@ -65,6 +68,22 @@ void main(int argc, char* argv[]) {
 			cout << "Houston, we have a problem " << WSAGetLastError () << " at package number " << i << endl;
 		}
 	}
+
+	//client needs to listen for messages or will close socket immediately
+	while (true) {
+
+		ZeroMemory(buf, 1024);
+
+		//wait for message
+		int bytesIn = recvfrom(out, buf, 1024, 0, (sockaddr*)&server, &serverLength);
+		if (bytesIn == SOCKET_ERROR) {
+			cout << "Error receiving from client" << WSAGetLastError() << endl;
+			continue;
+		}
+
+		cout << "Message received from server: " << " " << buf << " " << endl;
+	}
+
 	//close the socket
 	closesocket(out);
 
